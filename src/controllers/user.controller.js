@@ -147,8 +147,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -192,7 +192,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       await generateAccessAndRefreshTokens(user._id);
     return res
       .status(200)
-      .cookies("accessToken", accessToken, options)
+      .cookie("accessToken", accessToken, options)
       .cookie("newRefreshToken", newRefreshToken, options)
       .json(
         new ApiResponse(
@@ -229,7 +229,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "Current user fetched successfully");
+    .json(new ApiResponse(200, req.user, "Current user fetched successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -300,6 +300,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
+
   if (!username?.trim()) {
     throw new ApiError(400, "username is missing");
   }
@@ -331,7 +332,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         subscribersCount: {
           $size: "$subscribers",
         },
-        channelSubscribedToCount: {
+        channelsSubscribedToCount: {
           $size: "$subscribedTo",
         },
         isSubscribed: {
@@ -348,7 +349,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         fullName: 1,
         username: 1,
         subscribersCount: 1,
-        channelSubscribedToCount: 1,
+        channelsSubscribedToCount: 1,
         isSubscribed: 1,
         avatar: 1,
         coverImage: 1,
@@ -356,8 +357,9 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
   ]);
+
   if (!channel?.length) {
-    throw new ApiError(400, "channel does not exixts");
+    throw new ApiError(404, "channel does not exists");
   }
 
   return res
