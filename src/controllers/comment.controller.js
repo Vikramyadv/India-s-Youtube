@@ -80,7 +80,54 @@ const addComment = asyncHandler(async (req, res) => {
     );
 });
 
-const updateComment = asyncHandler(async (req, res) => {});
+const updateComment = asyncHandler(async (req, res) => {
+  const { newContent } = req.body;
+  const { commentId } = req.params;
+
+  if (!newContent || newContent?.trim() === "") {
+    throw new ApiError(400, "content is required");
+  }
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "This video id is not valid");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, "comment not found!");
+  }
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "You don't have permission to update this comment!"
+    );
+  }
+
+  const updateComment = await Comment.findByIdAndUpdate(
+    commentId,
+    {
+      $set: {
+        content: newContent,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!updateComment) {
+    throw new ApiError(500, "something went wrong while updating comment");
+  }
+
+  // return responce
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, updateComment, "comment updated successfully!!")
+    );
+});
 
 const deleteComment = asyncHandler(async (req, res) => {});
 
