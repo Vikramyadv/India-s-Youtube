@@ -121,7 +121,6 @@ const updateComment = asyncHandler(async (req, res) => {
     throw new ApiError(500, "something went wrong while updating comment");
   }
 
-  // return responce
   return res
     .status(201)
     .json(
@@ -129,6 +128,37 @@ const updateComment = asyncHandler(async (req, res) => {
     );
 });
 
-const deleteComment = asyncHandler(async (req, res) => {});
+const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "This video id is not valid");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, "comment not found!");
+  }
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "You don't have permission to delete this comment!"
+    );
+  }
+
+  const deleteComment = await Comment.deleteOne(req.user._id);
+
+  if (!deleteComment) {
+    throw new ApiError(500, "something went wrong while deleting comment");
+  }
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, deleteComment, "comment deleted successfully!!")
+    );
+});
 
 export { getVideoComments, addComment, updateComment, deleteComment };
