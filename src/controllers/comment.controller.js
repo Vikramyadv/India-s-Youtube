@@ -161,4 +161,37 @@ const deleteComment = asyncHandler(async (req, res) => {
     );
 });
 
-export { getVideoComments, addComment, updateComment, deleteComment };
+const addCommentToTweet = asyncHandler(async (req, res) => {
+  const { comment } = req.body;
+  const { tweetId } = req.params;
+
+  if (!comment || comment?.trim() === "") {
+    throw new ApiError(400, "comment is required");
+  }
+
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, "This tweet id is not valid");
+  }
+
+  const tweetComment = await Comment.create({
+    content: comment,
+    tweet: tweetId,
+    owner: req.user._id,
+  });
+
+  if (!tweetComment) {
+    throw new ApiError(
+      500,
+      "something went wrong while creating tweet comment"
+    );
+  }
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, tweetComment, "Tweet comment created successfully!!")
+    );
+});
+
+
+export { getVideoComments, addComment, updateComment, deleteComment,addCommentToTweet };
