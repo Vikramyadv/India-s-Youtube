@@ -193,5 +193,92 @@ const addCommentToTweet = asyncHandler(async (req, res) => {
     );
 });
 
+const updateCommentToTweet = asyncHandler(async (req, res) => {
+  const { newContent } = req.body;
+  const { commentId } = req.params;
 
-export { getVideoComments, addComment, updateComment, deleteComment,addCommentToTweet };
+  if (!newContent || newContent?.trim() === "") {
+    throw new ApiError(400, "content is required");
+  }
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "This video id is not valid");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, "comment not found!");
+  }
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "You don't have permission to update this comment!"
+    );
+  }
+
+  const updateComment = await Comment.findByIdAndUpdate(
+    commentId,
+    {
+      $set: {
+        content: newContent,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!updateComment) {
+    throw new ApiError(500, "something went wrong while updating comment");
+  }
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, updateComment, "comment updated successfully!!")
+    );
+});
+
+const deleteCommentToTweet = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "This tweet id is not valid");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, "comment not found!");
+  }
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(
+      403,
+      "You don't have permission to delete this comment!"
+    );
+  }
+
+  const deleteComment = await Comment.deleteOne(req.user._id);
+
+  if (!deleteComment) {
+    throw new ApiError(500, "something went wrong while deleting comment");
+  }
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(200, deleteComment, "comment deleted successfully!!")
+    );
+});
+export {
+  getVideoComments,
+  addComment,
+  updateComment,
+  deleteComment,
+  addCommentToTweet,
+  addCommentToTweet,
+  updateCommentToTweet,
+  deleteCommentToTweet,
+};
